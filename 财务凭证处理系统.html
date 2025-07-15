@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财务凭证处理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CFC9',
+                        accent: '#722ED1',
+                        neutral: '#F5F7FA',
+                        'neutral-dark': '#4E5969',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .shadow-soft {
+                box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            }
+            .transition-smooth {
+                transition: all 0.3s ease;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-book text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-gray-800">财务凭证处理系统</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="text-gray-600 hover:text-primary transition-smooth">
+                    <i class="fa fa-question-circle"></i>
+                    <span class="hidden md:inline ml-1">帮助</span>
+                </button>
+                <button class="text-gray-600 hover:text-primary transition-smooth">
+                    <i class="fa fa-user-circle"></i>
+                    <span class="hidden md:inline ml-1">登录</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- 流程说明 -->
+        <div class="mb-8 text-center">
+            <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800 mb-2">凭证处理流程</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">请按照以下流程完成业务单据的审核与凭证生成，确保财务数据的准确性和完整性</p>
+        </div>
+        
+        <!-- 流程生产线 -->
+        <div class="factory-line flex flex-wrap justify-center items-center mb-12 p-6 bg-white rounded-lg shadow-soft">
+            <!-- 业务单据站 -->
+            <div class="station text-center mx-4 my-4 flex flex-col items-center transition-smooth hover:scale-105" id="station1">
+                <div class="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                    <i class="fa fa-file-text-o text-primary text-3xl"></i>
+                </div>
+                <div class="label font-medium text-gray-800">业务单据</div>
+                <div class="text-xs text-gray-500 mt-1">创建与录入</div>
+            </div>
+            
+            <div class="arrow text-gray-400 text-xl hidden sm:block">
+                <i class="fa fa-long-arrow-right"></i>
+            </div>
+            <div class="arrow text-gray-400 text-xl sm:hidden">
+                <i class="fa fa-long-arrow-down"></i>
+            </div>
+            
+            <!-- 审核台站 -->
+            <div class="station text-center mx-4 my-4 flex flex-col items-center transition-smooth hover:scale-105" id="station2">
+                <div class="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                    <i class="fa fa-check-square-o text-primary text-3xl"></i>
+                </div>
+                <div class="label font-medium text-gray-800">审核台</div>
+                <div class="text-xs text-gray-500 mt-1">单据审核</div>
+            </div>
+            
+            <div class="arrow text-gray-400 text-xl hidden sm:block">
+                <i class="fa fa-long-arrow-right"></i>
+            </div>
+            <div class="arrow text-gray-400 text-xl sm:hidden">
+                <i class="fa fa-long-arrow-down"></i>
+            </div>
+            
+            <!-- 凭证打印站 -->
+            <div class="station text-center mx-4 my-4 flex flex-col items-center transition-smooth hover:scale-105" id="station3">
+                <div class="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                    <i class="fa fa-print text-primary text-3xl"></i>
+                </div>
+                <div class="label font-medium text-gray-800">凭证打印</div>
+                <div class="text-xs text-gray-500 mt-1">生成与输出</div>
+            </div>
+        </div>
+        
+        <!-- 当前步骤指示器 -->
+        <div class="mb-8 text-center">
+            <div class="inline-block bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
+                <i class="fa fa-info-circle mr-1"></i>当前步骤：凭证填写
+            </div>
+        </div>
+        
+        <!-- 凭证表单卡片 -->
+        <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-soft overflow-hidden">
+            <div class="bg-primary text-white p-4">
+                <h3 class="text-lg font-bold flex items-center">
+                    <i class="fa fa-bookmark mr-2"></i>记账凭证
+                </h3>
+            </div>
+            
+            <div class="p-6">
+                <form id="voucherForm" class="space-y-6">
+                    <!-- 日期和凭证号 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">日期</label>
+                            <input type="date" value="2023-09-15" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">凭证号</label>
+                            <input type="text" value="PZ-20230915-001" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        </div>
+                    </div>
+                    
+                    <!-- 摘要 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">摘要</label>
+                        <input type="text" value="销售奶茶" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                    </div>
+                    
+                    <!-- 会计科目表格 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">会计科目明细</label>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-md">会计科目</th>
+                                        <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">方向</th>
+                                        <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-md">金额</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200" id="entriesContainer">
+                                    <tr>
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <select class="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                                                <option>库存现金</option>
+                                                <option selected>银行存款</option>
+                                                <option>应收账款</option>
+                                                <option>主营业务收入</option>
+                                                <option>库存商品</option>
+                                                <option>管理费用</option>
+                                            </select>
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <select class="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                                                <option>借</option>
+                                                <option selected>贷</option>
+                                            </select>
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <span class="text-gray-500 mr-1">￥</span>
+                                                <input type="number" step="0.01" value="800.00" 
+                                                    class="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- 添加行按钮 -->
+                        <button type="button" id="addRowBtn" class="mt-2 text-sm text-primary hover:text-primary/80 flex items-center transition-smooth">
+                            <i class="fa fa-plus-circle mr-1"></i> 添加科目行
+                        </button>
+                    </div>
+                    
+                    <!-- 附件和备注 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                        <textarea rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                            placeholder="请输入备注信息..."></textarea>
+                    </div>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="flex flex-wrap justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-smooth flex items-center">
+                            <i class="fa fa-save mr-2"></i> 保存草稿
+                        </button>
+                        <button type="button" class="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/5 transition-smooth flex items-center">
+                            <i class="fa fa-print mr-2"></i> 预览打印
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-smooth flex items-center">
+                            <i class="fa fa-check mr-2"></i> 提交审核
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="container mx-auto px-4 py-6">
+            <div class="text-center text-gray-500 text-sm">
+                <p>© 2023 财务凭证处理系统 - 版权所有</p>
+                <p class="mt-1">财务流程自动化解决方案</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置当前日期为默认日期
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelector('input[type="date"]').value = today;
+            
+            // 添加科目行按钮功能
+            const addRowBtn = document.getElementById('addRowBtn');
+            const entriesContainer = document.getElementById('entriesContainer');
+            
+            addRowBtn.addEventListener('click', function() {
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <select class="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                            <option>库存现金</option>
+                            <option>银行存款</option>
+                            <option>应收账款</option>
+                            <option selected>主营业务收入</option>
+                            <option>库存商品</option>
+                            <option>管理费用</option>
+                        </select>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <select class="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                            <option selected>借</option>
+                            <option>贷</option>
+                        </select>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <span class="text-gray-500 mr-1">￥</span>
+                            <input type="number" step="0.01" value="0.00" 
+                                class="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                        </div>
+                    </td>
+                `;
+                entriesContainer.appendChild(newRow);
+                
+                // 添加动画效果
+                newRow.classList.add('opacity-0');
+                setTimeout(() => {
+                    newRow.classList.remove('opacity-0');
+                    newRow.classList.add('transition-smooth', 'opacity-100');
+                }, 10);
+            });
+            
+            // 表单提交处理
+            const voucherForm = document.getElementById('voucherForm');
+            voucherForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // 模拟表单验证和提交
+                alert('凭证已提交审核！');
+                
+                // 更新流程步骤状态
+                document.getElementById('station2').querySelector('div:first-child').classList.remove('bg-primary/10');
+                document.getElementById('station2').querySelector('div:first-child').classList.add('bg-secondary/20');
+                document.getElementById('station2').querySelector('i').classList.remove('text-primary');
+                document.getElementById('station2').querySelector('i').classList.add('text-secondary');
+            });
+        });
+    </script>
+</body>
+</html>

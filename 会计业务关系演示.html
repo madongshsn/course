@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会计业务关系演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4ecf7 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin: 30px 0;
+            text-align: center;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            margin-bottom: 30px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .business-container {
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .business-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            flex: 1 1 280px;
+            max-width: 320px;
+        }
+        
+        .business-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+        
+        .business-circle {
+            width: clamp(100px, 25vw, 150px);
+            height: clamp(100px, 25vw, 150px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: bold;
+            color: white;
+            font-size: clamp(1.1rem, 3vw, 1.3rem);
+            transition: all 0.3s ease;
+        }
+        
+        .business-circle:hover {
+            transform: scale(1.05);
+        }
+        
+        .action .business-circle {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .change .business-circle {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .direction .business-circle {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .business-title {
+            font-size: clamp(1.2rem, 3vw, 1.4rem);
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .action .business-title {
+            color: #e74c3c;
+        }
+        
+        .change .business-title {
+            color: #3498db;
+        }
+        
+        .direction .business-title {
+            color: #2ecc71;
+        }
+        
+        .business-value {
+            font-size: clamp(1.1rem, 2.5vw, 1.2rem);
+            color: #555;
+            text-align: center;
+        }
+        
+        .info-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .info-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.1);
+        }
+        
+        .info-panel h2 {
+            color: #3498db;
+            margin-bottom: 15px;
+            font-size: clamp(1.2rem, 3vw, 1.4rem);
+            border-left: 4px solid #3498db;
+            padding-left: 10px;
+        }
+        
+        .info-content {
+            color: #555;
+            line-height: 1.8;
+            font-size: clamp(1rem, 2vw, 1.1rem);
+        }
+        
+        /* 动画效果 */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <h1>会计业务关系演示</h1>
+    
+    <div class="controls">
+        <button id="changeBtn">更换业务</button>
+    </div>
+    
+    <div class="business-container">
+        <div class="business-item action fade-in" id="actionItem">
+            <div class="business-circle" id="actionCircle">业务动作</div>
+            <div class="business-title">业务动作</div>
+            <div class="business-value" id="actionValue">付现金</div>
+        </div>
+        
+        <div class="business-item change fade-in" id="changeItem">
+            <div class="business-circle" id="changeCircle">要素变化</div>
+            <div class="business-title">要素变化</div>
+            <div class="business-value" id="changeValue">资产减少</div>
+        </div>
+        
+        <div class="business-item direction fade-in" id="directionItem">
+            <div class="business-circle" id="directionCircle">借贷方向</div>
+            <div class="business-title">借贷方向</div>
+            <div class="business-value" id="directionValue">贷方</div>
+        </div>
+    </div>
+    
+    <div class="info-panel fade-in">
+        <h2>会计业务说明</h2>
+        <div class="info-content" id="infoContent">
+            当发生"付现金"业务时，对应的会计要素变化为"资产减少"，在会计分录中应记录在"贷方"。
+            这是基于会计基本等式"资产=负债+所有者权益"和"有借必有贷，借贷必相等"的记账规则。
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const changeBtn = document.getElementById('changeBtn');
+        const actionValue = document.getElementById('actionValue');
+        const changeValue = document.getElementById('changeValue');
+        const directionValue = document.getElementById('directionValue');
+        const infoContent = document.getElementById('infoContent');
+        const actionItem = document.getElementById('actionItem');
+        const changeItem = document.getElementById('changeItem');
+        const directionItem = document.getElementById('directionItem');
+        
+        // 业务数据集合
+        const businessData = [
+            {
+                action: "付现金",
+                change: "资产减少",
+                direction: "贷方",
+                info: "当发生'付现金'业务时，对应的会计要素变化为'资产减少'，在会计分录中应记录在'贷方'。这是基于会计基本等式'资产=负债+所有者权益'和'有借必有贷，借贷必相等'的记账规则。"
+            },
+            {
+                action: "收现金",
+                change: "资产增加",
+                direction: "借方",
+                info: "当发生'收现金'业务时，对应的会计要素变化为'资产增加'，在会计分录中应记录在'借方'。现金属于资产类科目，增加记借方，减少记贷方。"
+            },
+            {
+                action: "欠货款",
+                change: "负债增加",
+                direction: "贷方",
+                info: "当发生'欠货款'业务时，对应的会计要素变化为'负债增加'，在会计分录中应记录在'贷方'。应付账款属于负债类科目，增加记贷方，减少记借方。"
+            },
+            {
+                action: "还欠款",
+                change: "负债减少",
+                direction: "借方",
+                info: "当发生'还欠款'业务时，对应的会计要素变化为'负债减少'，在会计分录中应记录在'借方'。偿还债务会导致负债减少，符合负债类科目减少记借方的规则。"
+            }
+        ];
+        
+        let currentDataIndex = 0;
+        
+        // 更换业务
+        changeBtn.addEventListener('click', () => {
+            // 移除所有淡入动画类
+            actionItem.classList.remove('fade-in');
+            changeItem.classList.remove('fade-in');
+            directionItem.classList.remove('fade-in');
+            
+            // 强制回流
+            void actionItem.offsetWidth;
+            
+            // 添加淡入动画类
+            actionItem.classList.add('fade-in');
+            changeItem.classList.add('fade-in');
+            directionItem.classList.add('fade-in');
+            
+            // 切换到下一个业务数据
+            currentDataIndex = (currentDataIndex + 1) % businessData.length;
+            const newData = businessData[currentDataIndex];
+            
+            // 更新显示内容
+            actionValue.textContent = newData.action;
+            changeValue.textContent = newData.change;
+            directionValue.textContent = newData.direction;
+            infoContent.textContent = newData.info;
+            
+            // 为每个项目添加动画效果
+            animateCircle(actionItem);
+            animateCircle(changeItem);
+            animateCircle(directionItem);
+        });
+        
+        // 点击环形区域显示详细信息
+        const circles = document.querySelectorAll('.business-circle');
+        circles.forEach(circle => {
+            circle.addEventListener('click', () => {
+                // 添加点击动画效果
+                circle.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    circle.style.transform = '';
+                }, 300);
+            });
+        });
+        
+        // 圆形动画函数
+        function animateCircle(element) {
+            element.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                element.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    element.style.transform = '';
+                }, 150);
+            }, 150);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>借贷记账法学习助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        debit: '#ef4444',
+                        credit: '#2563eb',
+                        neutral: '#f3f4f6',
+                        primary: '#1e40af',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .card-flip {
+                perspective: 1000px;
+                transform-style: preserve-3d;
+            }
+            .card-front, .card-back {
+                backface-visibility: hidden;
+                transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .card-back {
+                transform: rotateY(180deg);
+            }
+            .card-flip:hover .card-front {
+                transform: rotateY(180deg);
+            }
+            .card-flip:hover .card-back {
+                transform: rotateY(0deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-neutral to-white min-h-screen font-sans text-gray-800">
+    <header class="bg-primary text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-shadow flex items-center">
+                        <i class="fa fa-calculator mr-3 text-yellow-300"></i>
+                        借贷记账法学习助手
+                    </h1>
+                    <p class="text-blue-100 mt-1">轻松掌握会计借贷规则</p>
+                </div>
+                <div class="flex space-x-4">
+                    <button id="theme-toggle" class="bg-blue-700 hover:bg-blue-600 text-white p-2 rounded-full transition-all duration-300 hover:scale-110">
+                        <i class="fa fa-moon-o"></i>
+                    </button>
+                    <button id="help-btn" class="bg-blue-700 hover:bg-blue-600 text-white p-2 rounded-full transition-all duration-300 hover:scale-110">
+                        <i class="fa fa-question"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <section class="mb-12">
+            <div class="text-center mb-8">
+                <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800 mb-3">会计要素借贷规则</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">理解借贷记账法的核心规则，掌握资产、负债、所有者权益、收入和费用的借贷方向</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 资产卡片 -->
+                <div class="card-flip rounded-xl overflow-hidden shadow-xl bg-white hover:shadow-2xl transition-all duration-300">
+                    <div class="card-front h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-debit/90 to-debit">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-white text-xl font-bold">资产</h3>
+                            <span class="bg-white/20 text-white px-3 py-1 rounded-full text-sm">+↑→借</span>
+                        </div>
+                        <div class="mt-auto">
+                            <p class="text-white/90">资产增加记借方，减少记贷方</p>
+                            <div class="mt-4 flex items-center">
+                                <i class="fa fa-arrow-down text-white/80 mr-2"></i>
+                                <span class="text-white/80">点击翻转查看示例</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-back absolute inset-0 h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-white to-gray-100">
+                        <div>
+                            <h3 class="text-debit text-xl font-bold mb-2">资产示例</h3>
+                            <ul class="text-gray-700 space-y-2">
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-debit mr-2"></i>
+                                    银行存款增加 <span class="text-debit font-medium">借：银行存款</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-debit mr-2"></i>
+                                    应收账款增加 <span class="text-debit font-medium">借：应收账款</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-debit mr-2"></i>
+                                    固定资产增加 <span class="text-debit font-medium">借：固定资产</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-debit/80 text-sm">资产类账户借方余额</div>
+                    </div>
+                </div>
+
+                <!-- 负债卡片 -->
+                <div class="card-flip rounded-xl overflow-hidden shadow-xl bg-white hover:shadow-2xl transition-all duration-300">
+                    <div class="card-front h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-credit/90 to-credit">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-white text-xl font-bold">负债</h3>
+                            <span class="bg-white/20 text-white px-3 py-1 rounded-full text-sm">+↑→贷</span>
+                        </div>
+                        <div class="mt-auto">
+                            <p class="text-white/90">负债增加记贷方，减少记借方</p>
+                            <div class="mt-4 flex items-center">
+                                <i class="fa fa-arrow-down text-white/80 mr-2"></i>
+                                <span class="text-white/80">点击翻转查看示例</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-back absolute inset-0 h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-white to-gray-100">
+                        <div>
+                            <h3 class="text-credit text-xl font-bold mb-2">负债示例</h3>
+                            <ul class="text-gray-700 space-y-2">
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-credit mr-2"></i>
+                                    短期借款增加 <span class="text-credit font-medium">贷：短期借款</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-credit mr-2"></i>
+                                    应付账款增加 <span class="text-credit font-medium">贷：应付账款</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-credit mr-2"></i>
+                                    长期借款增加 <span class="text-credit font-medium">贷：长期借款</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-credit/80 text-sm">负债类账户贷方余额</div>
+                    </div>
+                </div>
+
+                <!-- 所有者权益卡片 -->
+                <div class="card-flip rounded-xl overflow-hidden shadow-xl bg-white hover:shadow-2xl transition-all duration-300">
+                    <div class="card-front h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-purple-600/90 to-purple-600">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-white text-xl font-bold">所有者权益</h3>
+                            <span class="bg-white/20 text-white px-3 py-1 rounded-full text-sm">+↑→贷</span>
+                        </div>
+                        <div class="mt-auto">
+                            <p class="text-white/90">权益增加记贷方，减少记借方</p>
+                            <div class="mt-4 flex items-center">
+                                <i class="fa fa-arrow-down text-white/80 mr-2"></i>
+                                <span class="text-white/80">点击翻转查看示例</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-back absolute inset-0 h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-white to-gray-100">
+                        <div>
+                            <h3 class="text-purple-600 text-xl font-bold mb-2">所有者权益示例</h3>
+                            <ul class="text-gray-700 space-y-2">
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-purple-600 mr-2"></i>
+                                    实收资本增加 <span class="text-purple-600 font-medium">贷：实收资本</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-purple-600 mr-2"></i>
+                                    资本公积增加 <span class="text-purple-600 font-medium">贷：资本公积</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-purple-600 mr-2"></i>
+                                    盈余公积增加 <span class="text-purple-600 font-medium">贷：盈余公积</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-purple-600/80 text-sm">权益类账户贷方余额</div>
+                    </div>
+                </div>
+
+                <!-- 收入卡片 -->
+                <div class="card-flip rounded-xl overflow-hidden shadow-xl bg-white hover:shadow-2xl transition-all duration-300">
+                    <div class="card-front h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-green-600/90 to-green-600">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-white text-xl font-bold">收入</h3>
+                            <span class="bg-white/20 text-white px-3 py-1 rounded-full text-sm">+↑→贷</span>
+                        </div>
+                        <div class="mt-auto">
+                            <p class="text-white/90">收入增加记贷方，减少记借方</p>
+                            <div class="mt-4 flex items-center">
+                                <i class="fa fa-arrow-down text-white/80 mr-2"></i>
+                                <span class="text-white/80">点击翻转查看示例</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-back absolute inset-0 h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-white to-gray-100">
+                        <div>
+                            <h3 class="text-green-600 text-xl font-bold mb-2">收入示例</h3>
+                            <ul class="text-gray-700 space-y-2">
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-green-600 mr-2"></i>
+                                    主营业务收入 <span class="text-green-600 font-medium">贷：主营业务收入</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-green-600 mr-2"></i>
+                                    其他业务收入 <span class="text-green-600 font-medium">贷：其他业务收入</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-green-600 mr-2"></i>
+                                    营业外收入 <span class="text-green-600 font-medium">贷：营业外收入</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-green-600/80 text-sm">收入类账户期末无余额</div>
+                    </div>
+                </div>
+
+                <!-- 费用卡片 -->
+                <div class="card-flip rounded-xl overflow-hidden shadow-xl bg-white hover:shadow-2xl transition-all duration-300">
+                    <div class="card-front h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-amber-600/90 to-amber-600">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-white text-xl font-bold">费用</h3>
+                            <span class="bg-white/20 text-white px-3 py-1 rounded-full text-sm">+↑→借</span>
+                        </div>
+                        <div class="mt-auto">
+                            <p class="text-white/90">费用增加记借方，减少记贷方</p>
+                            <div class="mt-4 flex items-center">
+                                <i class="fa fa-arrow-down text-white/80 mr-2"></i>
+                                <span class="text-white/80">点击翻转查看示例</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-back absolute inset-0 h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-white to-gray-100">
+                        <div>
+                            <h3 class="text-amber-600 text-xl font-bold mb-2">费用示例</h3>
+                            <ul class="text-gray-700 space-y-2">
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-amber-600 mr-2"></i>
+                                    管理费用增加 <span class="text-amber-600 font-medium">借：管理费用</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-amber-600 mr-2"></i>
+                                    销售费用增加 <span class="text-amber-600 font-medium">借：销售费用</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-amber-600 mr-2"></i>
+                                    财务费用增加 <span class="text-amber-600 font-medium">借：财务费用</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-amber-600/80 text-sm">费用类账户期末无余额</div>
+                    </div>
+                </div>
+
+                <!-- 总结卡片 -->
+                <div class="card-flip rounded-xl overflow-hidden shadow-xl bg-white hover:shadow-2xl transition-all duration-300">
+                    <div class="card-front h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-primary/90 to-primary">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-white text-xl font-bold">借贷总结</h3>
+                            <span class="bg-white/20 text-white px-3 py-1 rounded-full text-sm">核心规则</span>
+                        </div>
+                        <div class="mt-auto">
+                            <p class="text-white/90">有借必有贷，借贷必相等</p>
+                            <div class="mt-4 flex items-center">
+                                <i class="fa fa-arrow-down text-white/80 mr-2"></i>
+                                <span class="text-white/80">点击翻转查看总结</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-back absolute inset-0 h-64 p-6 flex flex-col justify-between bg-gradient-to-br from-white to-gray-100">
+                        <div>
+                            <h3 class="text-primary text-xl font-bold mb-2">借贷记账法核心</h3>
+                            <ul class="text-gray-700 space-y-2">
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-primary mr-2"></i>
+                                    资产、费用 <span class="text-debit font-medium">借增贷减</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-check-circle text-primary mr-2"></i>
+                                    负债、权益、收入 <span class="text-credit font-medium">贷增借减</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-balance-scale text-primary mr-2"></i>
+                                    每笔交易至少涉及两个账户
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa fa-calculator text-primary mr-2"></i>
+                                    借方总额等于贷方总额
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-primary/80 text-sm">掌握这些规则，轻松处理会计分录</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12 bg-white rounded-xl shadow-lg p-6 md:p-8">
+            <div class="flex flex-col md:flex-row items-center justify-between mb-8">
+                <div class="mb-6 md:mb-0">
+                    <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800 mb-2">借贷口诀 RAP</h2>
+                    <p class="text-gray-600 max-w-2xl">点击播放按钮，通过音乐和节奏帮助你记忆借贷规则</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button id="play-btn" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium flex items-center transition-all duration-300 hover:shadow-lg">
+                        <i class="fa fa-play mr-2"></i> 播放口诀
+                    </button>
+                    <button id="lyrics-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-medium flex items-center transition-all duration-300">
+                        <i class="fa fa-list-alt mr-2"></i> 显示歌词
+                    </button>
+                </div>
+            </div>
+
+            <div class="relative bg-gray-50 rounded-lg p-6 shadow-inner overflow-hidden">
+                <div id="audio-visualizer" class="w-full h-20 mb-4 flex items-end justify-center space-x-1">
+                    <!-- 音频可视化效果将在这里动态生成 -->
+                </div>
+
+                <div id="lyrics-container" class="hidden">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">借贷记账法口诀 RAP</h3>
+                    <div class="prose max-w-none text-center">
+                        <p class="text-lg text-gray-700 mb-2">资产增加借方瞧，减少贷方要记牢</p>
+                        <p class="text-lg text-gray-700 mb-2">负债权益相反照，增加贷方不会错</p>
+                        <p class="text-lg text-gray-700 mb-2">收入贷方来报道，借方表示已减少</p>
+                        <p class="text-lg text-gray-700 mb-2">费用借方来挂号，贷方转出别忘掉</p>
+                        <p class="text-lg text-gray-700 mb-4">有借必有贷，借贷必相等</p>
+                        <p class="text-lg text-gray-700 mb-2">会计分录要写好，试算平衡错不了</p>
+                        <p class="text-lg text-gray-700 mb-2">资产费用借增贷减，权益收入贷增借减</p>
+                        <p class="text-lg text-gray-700 mb-2">借贷规则心中记，会计学习不费力</p>
+                    </div>
+                </div>
+
+                <div id="no-audio-message" class="text-center py-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
+                        <i class="fa fa-music text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">借贷口诀 RAP</h3>
+                    <p class="text-gray-600 mb-4">点击播放按钮，通过音乐和节奏帮助你记忆借贷规则</p>
+                    <p class="text-gray-500 text-sm italic">注意：这是一个模拟音频播放器，实际使用时可替换为真实的音频文件</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <div class="text-center mb-8">
+                <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800 mb-3">会计分录练习</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">通过实际案例巩固你对借贷记账法的理解</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">案例：企业日常经济业务</h3>
+                    <div class="space-y-6">
+                        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div class="flex items-start">
+                                <div class="bg-blue-100 text-blue-800 rounded-full p-2 mr-4 mt-1">
+                                    <i class="fa fa-money"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 mb-1">1. 收到股东投资</h4>
+                                    <p class="text-gray-600 mb-3">企业收到股东投入现金100,000元。</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="px-3 py-1 bg-debit/10 text-debit rounded-full text-sm font-medium">
+                                            借：银行存款 100,000
+                                        </span>
+                                        <span class="px-3 py-1 bg-credit/10 text-credit rounded-full text-sm font-medium">
+                                            贷：实收资本 100,000
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div class="flex items-start">
+                                <div class="bg-green-100 text-green-800 rounded-full p-2 mr-4 mt-1">
+                                    <i class="fa fa-shopping-cart"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 mb-1">2. 购买办公用品</h4>
+                                    <p class="text-gray-600 mb-3">企业用银行存款购买办公用品2,000元。</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="px-3 py-1 bg-debit/10 text-debit rounded-full text-sm font-medium">
+                                            借：管理费用 2,000
+                                        </span>
+                                        <span class="px-3 py-1 bg-credit/10 text-credit rounded-full text-sm font-medium">
+                                            贷：银行存款 2,000
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div class="flex items-start">
+                                <div class="bg-purple-100 text-purple-800 rounded-full p-2 mr-4 mt-1">
+                                    <i class="fa fa-truck"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 mb-1">3. 赊购设备</h4>
+                                    <p class="text-gray-600 mb-3">企业从供应商处赊购一台设备，价值50,000元。</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="px-3 py-1 bg-debit/10 text-debit rounded-full text-sm font-medium">
+                                            借：固定资产 50,000
+                                        </span>
+                                        <span class="px-3 py-1 bg-credit/10 text-credit rounded-full text-sm font-medium">
+                                            贷：应付账款 50,000
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div class="flex items-start">
+                                <div class="bg-amber-100 text-amber-800 rounded-full p-2 mr-4 mt-1">
+                                    <i class="fa fa-credit-card"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 mb-1">4. 偿还短期借款</h4>
+                                    <p class="text-gray-600 mb-3">企业用银行存款偿还短期借款30,000元。</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="px-3 py-1 bg-debit/10 text-debit rounded-full text-sm font-medium">
+                                            借：短期借款 30,000
+                                        </span>
+                                        <span class="px-3 py-1 bg-credit/10 text-credit rounded-full text-sm font-medium">
+                                            贷：银行存款 30,000
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fa fa-lightbulb-o text-blue-500 mr-2"></i>
+                        学习提示
+                    </h3>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-blue-500 mt-1 mr-2"></i>
+                            <span>反复观看借贷规则卡片，加深记忆</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-blue-500 mt-1 mr-2"></i>
+                            <span>多听口诀 RAP，利用音乐记忆法强化规则</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-blue-500 mt-1 mr-2"></i>
+                            <span>尝试自己编写更多会计分录，检验学习效果</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-blue-500 mt-1 mr-2"></i>
+                            <span>遇到复杂业务时，先确定涉及的会计要素，再判断借贷方向</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-10">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">借贷记账法学习助手</h3>
+                    <p class="text-gray-400">帮助会计学习者轻松掌握借贷记账法的核心规则，通过互动方式提升学习效率。</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">学习资源</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors duration-300">会计基础教程</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors duration-300">借贷记账法详解</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors duration-300">会计分录大全</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors duration-300">财务报表分析</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">联系我们</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li class="flex items-center">
+                            <i class="fa fa-envelope-o mr-2"></i>
+                            <a href="mailto:support@accountinglearning.com" class="hover:text-white transition-colors duration-300">support@accountinglearning.com</a>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fa fa-phone mr-2"></i>
+                            <a href="tel:+8612345678900" class="hover:text-white transition-colors duration-300">+86 123 4567 8900</a>
+                        </li>
+                    </ul>
+                    <div class="mt-4 flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fa fa-weixin text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fa fa-weibo text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fa fa-qq text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-500 text-sm">
+                <p>&copy; 2025 借贷记账法学习助手 | 保留所有权利</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 音频可视化效果
+        const audioVisualizer = document.getElementById('audio-visualizer');
+        const playBtn = document.getElementById('play-btn');
+        const lyricsBtn = document.getElementById('lyrics-btn');
+        const lyricsContainer = document.getElementById('lyrics-container');
+        const noAudioMessage = document.getElementById('no-audio-message');
+        const helpBtn = document.getElementById('help-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        let isPlaying = false;
+        let bars = [];
+        let animationId = null;
+
+        // 创建音频可视化条
+        function createVisualizerBars() {
+            audioVisualizer.innerHTML = '';
+            bars = [];
+            
+            for (let i = 0; i < 40; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bg-primary h-2 w-2 rounded-full';
+                audioVisualizer.appendChild(bar);
+                bars.push(bar);
+            }
+        }
+
+        // 音频可视化动画
+        function animateVisualizer() {
+            bars.forEach(bar => {
+                const height = Math.floor(Math.random() * 80) + 10;
+                bar.style.height = `${height}%`;
+                bar.style.backgroundColor = `hsl(${Math.floor(Math.random() * 220)}, 70%, 50%)`;
+            });
+            
+            animationId = requestAnimationFrame(animateVisualizer);
+        }
+
+        // 播放/暂停音频
+        playBtn.addEventListener('click', () => {
+            if (!isPlaying) {
+                isPlaying = true;
+                playBtn.innerHTML = '<i class="fa fa-pause mr-2"></i> 暂停播放';
+                playBtn.classList.remove('bg-primary');
+                playBtn.classList.add('bg-red-500');
+                noAudioMessage.classList.add('hidden');
+                lyricsContainer.classList.remove('hidden');
+                
+                createVisualizerBars();
+                animateVisualizer();
+                
+                // 模拟音频播放
+                setTimeout(() => {
+                    stopAudio();
+                }, 60000); // 模拟60秒后自动停止
+            } else {
+                stopAudio();
+            }
+        });
+
+        // 停止音频播放
+        function stopAudio() {
+            isPlaying = false;
+            playBtn.innerHTML = '<i class="fa fa-play mr-2"></i> 播放口诀';
+            playBtn.classList.remove('bg-red-500');
+            playBtn.classList.add('bg-primary');
+            noAudioMessage.classList.remove('hidden');
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        // 显示/隐藏歌词
+        lyricsBtn.addEventListener('click', () => {
+            lyricsContainer.classList.toggle('hidden');
+            if (lyricsContainer.classList.contains('hidden')) {
+                lyricsBtn.innerHTML = '<i class="fa fa-list-alt mr-2"></i> 显示歌词';
+            } else {
+                lyricsBtn.innerHTML = '<i class="fa fa-list-alt mr-2"></i> 隐藏歌词';
+            }
+        });
+
+        // 帮助按钮
+        helpBtn.addEventListener('click', () => {
+            alert('这是一个帮助会计学习者掌握借贷记账法的小程序。\n\n使用方法：\n1. 查看各种会计要素的借贷规则磁贴\n2. 点击"播放口诀"按钮，通过RAP音乐帮助记忆\n3. 参考会计分录案例，加深对借贷记账法的理解');
+        });
+
+        // 主题切换
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('bg-gray-900');
+            document.body.classList.toggle('text-white');
+            
+            const isDark = document.body.classList.contains('bg-gray-900');
+            themeToggle.innerHTML = isDark ? '<i class="fa fa-sun-o"></i>' : '<i class="fa fa-moon-o"></i>';
+            
+            // 更新卡片颜色
+            const cards = document.querySelectorAll('.card-flip');
+            cards.forEach(card => {
+                if (isDark) {
+                    card.classList.remove('bg-white');
+                    card.classList.add('bg-gray-800');
+                } else {
+                    card.classList.remove('bg-gray-800');
+                    card.classList.add('bg-white');
+                }
+            });
+            
+            // 更新练习部分背景
+            const practiceSection = document.querySelector('.bg-white.rounded-xl.shadow-lg.p-6.md\\:p-8');
+            if (practiceSection) {
+                if (isDark) {
+                    practiceSection.classList.remove('bg-white');
+                    practiceSection.classList.add('bg-gray-800');
+                } else {
+                    practiceSection.classList.remove('bg-gray-800');
+                    practiceSection.classList.add('bg-white');
+                }
+            }
+            
+            // 更新案例背景
+            const cases = document.querySelectorAll('.bg-gray-50.rounded-lg.border');
+            cases.forEach(caseEl => {
+                if (isDark) {
+                    caseEl.classList.remove('bg-gray-50');
+                    caseEl.classList.add('bg-gray-700');
+                    caseEl.classList.remove('border-gray-200');
+                    caseEl.classList.add('border-gray-600');
+                } else {
+                    caseEl.classList.remove('bg-gray-700');
+                    caseEl.classList.add('bg-gray-50');
+                    caseEl.classList.remove('border-gray-600');
+                    caseEl.classList.add('border-gray-200');
+                }
+            });
+            
+            // 更新学习提示背景
+            const learningTips = document.querySelector('.bg-blue-50.rounded-lg.border');
+            if (learningTips) {
+                if (isDark) {
+                    learningTips.classList.remove('bg-blue-50');
+                    learningTips.classList.add('bg-blue-900/20');
+                    learningTips.classList.remove('border-blue-200');
+                    learningTips.classList.add('border-blue-700');
+                } else {
+                    learningTips.classList.remove('bg-blue-900/20');
+                    learningTips.classList.add('bg-blue-50');
+                    learningTips.classList.remove('border-blue-700');
+                    learningTips.classList.add('border-blue-200');
+                }
+            }
+        });
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化卡片翻转效果
+            const flipCards = document.querySelectorAll('.card-flip');
+            flipCards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.classList.add('scale-105');
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.classList.remove('scale-105');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+    

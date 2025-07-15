@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会计数字签名系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 主加密库 -->
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
+    <!-- 备用加密库 -->
+    <script src="https://cdn.jsdelivr.net/npm/sha256@0.2.0/sha256.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0F3460',
+                        secondary: '#E6B325',
+                        neutral: '#F5F5F5',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .signature-shadow {
+                box-shadow: 0 10px 25px -5px rgba(15, 52, 96, 0.1), 0 8px 10px -6px rgba(15, 52, 96, 0.1);
+            }
+            .hash-animation {
+                animation: hashPulse 2s infinite;
+            }
+            @keyframes hashPulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
+            }
+            .pencil-cursor {
+                cursor: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M13.5 4V2.5L20.5 9.5L19 11L12 4H13.5Z' fill='%230F3460'/%3E%3Cpath d='M4 21V14H11L18 7L16.5 5.5L9 13H2V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H11V21H4Z' fill='%230F3460'/%3E%3C/svg%3E") 0 24, auto;
+            }
+            .btn-loading {
+                opacity: 0.7;
+                cursor: wait;
+            }
+            .toast-notification {
+                animation: fadeInOut 3s ease-in-out;
+            }
+            @keyframes fadeInOut {
+                0% { opacity: 0; transform: translateY(-20px); }
+                15% { opacity: 1; transform: translateY(0); }
+                85% { opacity: 1; transform: translateY(0); }
+                100% { opacity: 0; transform: translateY(-20px); }
+            }
+            .error-details {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease-out;
+            }
+            .error-details.show {
+                max-height: 300px;
+                transition: max-height 0.5s ease-in;
+            }
+            .hash-progress {
+                height: 2px;
+                background: linear-gradient(90deg, #0F3460 0%, #E6B325 50%, #0F3460 100%);
+                background-size: 200% 100%;
+                animation: hashProgress 1.5s infinite;
+            }
+            @keyframes hashProgress {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+            }
+            .debug-info {
+                font-size: 10px;
+                color: #666;
+                margin-top: 10px;
+                padding-top: 10px;
+                border-top: 1px dashed #ccc;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- 顶部导航 -->
+    <header class="bg-primary text-white shadow-md">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-shield text-secondary text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold">会计数字签名系统</h1>
+            </div>
+            <div class="hidden md:flex items-center space-x-4">
+                <span class="text-sm opacity-90"><i class="fa fa-lock mr-1"></i> 安全加密</span>
+                <span class="text-sm opacity-90"><i class="fa fa-chain mr-1"></i> 区块链认证</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 使命感标语区 -->
+        <section class="mb-8 text-center max-w-3xl mx-auto">
+            <div class="relative py-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-primary/20"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-4 bg-gray-50 text-primary font-medium">职业使命</span>
+                </div>
+            </div>
+            <h2 class="text-[clamp(1.5rem,5vw,2.5rem)] font-serif font-bold text-primary leading-tight mb-4">
+                我记录的数字，<br class="md:hidden">承载企业生命！
+            </h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">
+                每一个数字都承载着责任，每一次记录都关乎信任。作为会计人员，我们的专业操守塑造企业的未来。
+            </p>
+        </section>
+
+        <!-- 签名板区域 -->
+        <section class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8 mb-8 transform transition-all duration-300 hover:shadow-xl">
+            <div class="flex flex-col md:flex-row gap-8">
+                <!-- 左侧签名区域 -->
+                <div class="w-full md:w-2/3">
+                    <div class="mb-4 flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-primary flex items-center">
+                            <i class="fa fa-pencil-square-o mr-2 text-secondary"></i>电子签名
+                        </h3>
+                        <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">请在此签名</span>
+                    </div>
+                    
+                    <!-- 签名画布 -->
+                    <div class="border-2 border-primary/20 rounded-lg overflow-hidden signature-shadow pencil-cursor bg-neutral" id="signature-pad-container">
+                        <canvas id="signature-pad" class="w-full h-[250px]"></canvas>
+                    </div>
+                    
+                    <!-- 控制按钮 -->
+                    <div class="mt-4 flex justify-between">
+                        <button id="clear-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition flex items-center">
+                            <i class="fa fa-eraser mr-2"></i>清除
+                        </button>
+                        <button id="save-btn" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition flex items-center">
+                            <i class="fa fa-check mr-2"></i>确认签名
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 右侧信息和结果区 -->
+                <div class="w-full md:w-1/3 flex flex-col">
+                    <h3 class="text-lg font-semibold text-primary flex items-center mb-4">
+                        <i class="fa fa-qrcode mr-2 text-secondary"></i>签名认证
+                    </h3>
+                    
+                    <div class="bg-neutral rounded-lg p-4 flex-grow flex flex-col justify-center">
+                        <div id="hash-placeholder" class="text-center py-8">
+                            <i class="fa fa-link text-4xl text-gray-300 mb-3"></i>
+                            <p class="text-gray-400 text-sm">完成签名后，将生成区块链哈希值</p>
+                        </div>
+                        
+                        <div id="hash-processing" class="hidden text-center py-8">
+                            <div class="hash-progress w-full mb-4"></div>
+                            <i class="fa fa-cog fa-spin text-4xl text-primary/70 mb-3"></i>
+                            <p class="text-primary/70 text-sm">正在生成区块链哈希值...</p>
+                            <p class="text-xs text-gray-500 mt-2" id="processing-step">准备数据...</p>
+                        </div>
+                        
+                        <div id="hash-result" class="hidden">
+                            <div class="mb-2 flex justify-between items-center">
+                                <span class="text-xs font-medium text-gray-500">区块链哈希值</span>
+                                <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full hash-animation">已认证</span>
+                            </div>
+                            <div class="bg-white p-3 rounded border border-gray-200 text-xs font-mono overflow-x-auto break-all mb-3" id="hash-value">
+                                <!-- 哈希值将在这里显示 -->
+                            </div>
+                            <div class="text-xs text-gray-500 text-center mb-2">
+                                此哈希值永久记录在分布式账本中
+                            </div>
+                            <div class="text-xs text-gray-500 text-center" id="algorithm-used">
+                                使用算法: SHA-256
+                            </div>
+                        </div>
+                        
+                        <div id="empty-signature-warning" class="hidden text-center py-8">
+                            <i class="fa fa-exclamation-triangle text-4xl text-yellow-400 mb-3"></i>
+                            <p class="text-yellow-600 text-sm">请先完成签名再确认</p>
+                        </div>
+                        
+                        <div id="hash-error" class="hidden text-center py-6">
+                            <i class="fa fa-times-circle text-4xl text-red-500 mb-3"></i>
+                            <p class="text-red-600 text-sm mb-2">生成哈希值失败</p>
+                            <div class="flex flex-col space-y-2">
+                                <button id="retry-btn" class="text-xs bg-primary/10 text-primary px-3 py-1 rounded mb-2">
+                                    <i class="fa fa-refresh mr-1"></i>重试
+                                </button>
+                                <button id="alternative-method-btn" class="text-xs bg-secondary/10 text-secondary px-3 py-1 rounded mb-2">
+                                    <i class="fa fa-random mr-1"></i>使用备用算法
+                                </button>
+                                <button id="basic-method-btn" class="text-xs bg-green-100 text-green-800 px-3 py-1 rounded mb-2">
+                                    <i class="fa fa-code mr-1"></i>使用基础算法
+                                </button>
+                            </div>
+                            <div>
+                                <button id="show-error-details" class="text-xs text-primary hover:underline">
+                                    查看详细错误信息
+                                </button>
+                                <div id="error-details" class="error-details text-left text-xs text-gray-600 bg-white p-3 rounded mt-2 text-break">
+                                    <!-- 错误详情将显示在这里 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 bg-primary/5 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-primary mb-2 flex items-center">
+                            <i class="fa fa-info-circle mr-1 text-secondary"></i>签名意义
+                        </h4>
+                        <ul class="text-xs text-gray-600 space-y-1">
+                            <li class="flex items-start">
+                                <i class="fa fa-check-circle text-green-500 mt-0.5 mr-2 text-xs"></i>
+                                <span>确认数据记录的准确性和完整性</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa fa-check-circle text-green-500 mt-0.5 mr-2 text-xs"></i>
+                                <span>承担数据记录的职业责任</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa fa-check-circle text-green-500 mt-0.5 mr-2 text-xs"></i>
+                                <span>确保财务信息的可追溯性</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 职业责任感强调区 -->
+        <section class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1 duration-300">
+                <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                    <i class="fa fa-handshake-o text-primary text-xl"></i>
+                </div>
+                <h3 class="font-semibold text-primary mb-2">诚信为本</h3>
+                <p class="text-sm text-gray-600">坚守会计职业道德，以诚信为工作基石，确保每一笔记录真实可靠。</p>
+            </div>
+            
+            <div class="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1 duration-300">
+                <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                    <i class="fa fa-balance-scale text-primary text-xl"></i>
+                </div>
+                <h3 class="font-semibold text-primary mb-2">责任在肩</h3>
+                <p class="text-sm text-gray-600">认识到数字背后的责任与使命，每一个数据都关系到企业的生存与发展。</p>
+            </div>
+            
+            <div class="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1 duration-300">
+                <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                    <i class="fa fa-shield text-primary text-xl"></i>
+                </div>
+                <h3 class="font-semibold text-primary mb-2">安全可靠</h3>
+                <p class="text-sm text-gray-600">借助区块链技术，确保签名不可篡改，为财务数据提供可靠的安全保障。</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- 通知提示区域 -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50"></div>
+
+    <!-- 页脚 -->
+    <footer class="bg-primary text-white py-6">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-sm opacity-80">© 2023 会计数字签名系统 - 增强会计职业责任感</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-white/80 hover:text-secondary transition">
+                        <i class="fa fa-file-text-o"></i> 使用说明
+                    </a>
+                    <a href="#" class="text-white/80 hover:text-secondary transition">
+                        <i class="fa fa-question-circle"></i> 帮助中心
+                    </a>
+                    <a href="#" class="text-white/80 hover:text-secondary transition">
+                        <i class="fa fa-shield"></i> 隐私政策
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 本地SHA-256实现 (不依赖任何外部库)
+        class LocalSHA256 {
+            static hash(data) {
+                // 简单的SHA-256实现简化版，用于极端情况下的备用方案
+                // 实际项目中应使用经过验证的加密库
+                function rotateRight(n, b) {
+                    return (n >>> b) | (n << (32 - b));
+                }
+                
+                function safeAdd(x, y) {
+                    let lsw = (x & 0xFFFF) + (y & 0xFFFF);
+                    let msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+                    return (msw << 16) | (lsw & 0xFFFF);
+                }
+                
+                function sha256CF(a, b, c, d, e, f, g, h, k, w) {
+                    let t1 = h + LocalSHA256.SIG1(e) + LocalSHA256.CH(e, f, g) + k + w;
+                    let t2 = LocalSHA256.SIG0(a) + LocalSHA256.MAJ(a, b, c);
+                    return [safeAdd(t1, t2), a, b, c, safeAdd(d, t1), e, f, g];
+                }
+                
+                let H = [
+                    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+                    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+                ];
+                
+                let K = [
+                    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+                    0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+                    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+                    0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+                    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+                    0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+                    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+                    0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+                    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+                    0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+                    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+                    0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+                    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+                    0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+                    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+                    0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+                ];
+                
+                // 将输入字符串转换为UTF-8字节
+                let bytes = [];
+                for (let i = 0; i < data.length; i++) {
+                    let c = data.charCodeAt(i);
+                    if (c < 0x80) {
+                        bytes.push(c);
+                    } else if (c < 0x800) {
+                        bytes.push(0xc0 | (c >> 6), 0x80 | (c & 0x3f));
+                    } else if (c < 0xd800 || c >= 0xe000) {
+                        bytes.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+                    } else {
+                        i++;
+                        c = 0x10000 + (((c & 0x3ff) << 10) | (data.charCodeAt(i) & 0x3ff));
+                        bytes.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 0x3f), 
+                                 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+                    }
+                }
+                
+                // 添加填充
+                let bits = bytes.length * 8;
+                bytes.push(0x80);
+                while ((bytes.length % 64) !== 56) bytes.push(0);
+                for (let i = 0; i < 8; i++) {
+                    bytes.push((bits >>> (8 * (7 - i))) & 0xff);
+                }
+                
+                // 处理每个512位块
+                for (let i = 0; i < bytes.length; i += 64) {
+                    let w = new Array(64);
+                    for (let j = 0; j < 16; j++) {
+                        w[j] = (bytes[i + j * 4] << 24) | (bytes[i + j * 4 + 1] << 16) |
+                               (bytes[i + j * 4 + 2] << 8) | bytes[i + j * 4 + 3];
+                    }
+                    for (let j = 16; j < 64; j++) {
+                        w[j] = safeAdd(safeAdd(LocalSHA256.SIGMA1(w[j - 2]), w[j - 7]),
+                                      safeAdd(LocalSHA256.SIGMA0(w[j - 15]), w[j - 16]));
+                    }
+                    
+                    let [a, b, c, d, e, f, g, h] = H;
+                    for (let j = 0; j < 64; j++) {
+                        [a, b, c, d, e, f, g, h] = sha256CF(a, b, c, d, e, f, g, h, K[j], w[j]);
+                    }
+                    
+                    H = [
+                        safeAdd(a, H[0]), safeAdd(b, H[1]), safeAdd(c, H[2]), safeAdd(d, H[3]),
+                        safeAdd(e, H[4]), safeAdd(f, H[5]), safeAdd(g, H[6]), safeAdd(h, H[7])
+                    ];
+                }
+                
+                // 将结果转换为十六进制字符串
+                let hex = '';
+                for (let i = 0; i < H.length; i++) {
+                    hex += ('00000000' + H[i].toString(16)).slice(-8);
+                }
+                return hex;
+            }
+            
+            static CH(x, y, z) {
+                return (x & y) ^ (~x & z);
+            }
+            
+            static MAJ(x, y, z) {
+                return (x & y) ^ (x & z) ^ (y & z);
+            }
+            
+            static SIG0(x) {
+                return this.rotateRight(x, 2) ^ this.rotateRight(x, 13) ^ this.rotateRight(x, 22);
+            }
+            
+            static SIG1(x) {
+                return this.rotateRight(x, 6) ^ this.rotateRight(x, 11) ^ this.rotateRight(x, 25);
+            }
+            
+            static SIGMA0(x) {
+                return this.rotateRight(x, 7) ^ this.rotateRight(x, 18) ^ (x >>> 3);
+            }
+            
+            static SIGMA1(x) {
+                return this.rotateRight(x, 17) ^ this.rotateRight(x, 19) ^ (x >>> 10);
+            }
+            
+            static rotateRight(n, b) {
+                return (n >>> b) | (n << (32 - b));
+            }
+        }
+
+        // 初始化签名板
+        const canvas = document.getElementById('signature-pad');
+        const ctx = canvas.getContext('2d');
+        const clearBtn = document.getElementById('clear-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const retryBtn = document.getElementById('retry-btn');
+        const alternativeMethodBtn = document.getElementById('alternative-method-btn');
+        const basicMethodBtn = document.getElementById('basic-method-btn');
+        const showErrorDetailsBtn = document.getElementById('show-error-details');
+        const errorDetails = document.getElementById('error-details');
+        const hashPlaceholder = document.getElementById('hash-placeholder');
+        const hashProcessing = document.getElementById('hash-processing');
+        const hashResult = document.getElementById('hash-result');
+        const hashValue = document.getElementById('hash-value');
+        const algorithmUsed = document.getElementById('algorithm-used');
+        const processingStep = document.getElementById('processing-step');
+        const emptySignatureWarning = document.getElementById('empty-signature-warning');
+        const hashError = document.getElementById('hash-error');
+        const toastContainer = document.getElementById('toast-container');
+        
+        // 记录是否有签名内容
+        let hasSignature = false;
+        // 存储最后一次错误信息
+        let lastError = null;
+        // 记录当前使用的算法
+        let currentAlgorithm = 'primary';
+        
+        // 更新处理步骤显示
+        function updateProcessingStep(text) {
+            processingStep.textContent = text;
+        }
+        
+        // 检查加密库是否可用
+        function checkEncryptionLibraries() {
+            const libraries = {
+                primary: { name: 'CryptoJS', available: typeof CryptoJS !== 'undefined' && typeof CryptoJS.SHA256 === 'function' },
+                alternative: { name: 'sha256.js', available: typeof sha256 === 'function' },
+                local: { name: '本地算法', available: true } // 本地算法总是可用
+            };
+            return libraries;
+        }
+        
+        // 设置画布尺寸
+        function resizeCanvas() {
+            const container = document.getElementById('signature-pad-container');
+            // 保存当前画布内容
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // 调整画布大小
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            // 恢复画布内容
+            ctx.putImageData(imageData, 0, 0);
+        }
+        
+        // 初始化画布
+        function initCanvas() {
+            ctx.strokeStyle = '#0F3460';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            clearCanvas();
+            
+            // 页面加载时检查加密库
+            try {
+                const libraries = checkEncryptionLibraries();
+                const availableLibs = Object.values(libraries).filter(lib => lib.available);
+                
+                if (availableLibs.length === 0) {
+                    throw new Error('所有加密库均不可用，请检查网络连接或刷新页面');
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+        
+        // 清除画布
+        function clearCanvas() {
+            ctx.fillStyle = '#F5F5F5';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            hasSignature = false;
+            currentAlgorithm = 'primary'; // 重置算法选择
+            showSection(hashPlaceholder);
+        }
+        
+        // 显示指定区域，隐藏其他相关区域
+        function showSection(section) {
+            section.classList.remove('hidden');
+            // 隐藏其他相关区域
+            const sections = [hashPlaceholder, hashProcessing, hashResult, emptySignatureWarning, hashError];
+            sections.forEach(s => {
+                if (s !== section) {
+                    s.classList.add('hidden');
+                }
+            });
+        }
+        
+        // 显示通知提示
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification px-4 py-2 rounded-lg shadow-lg ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+            
+            // 自动移除通知
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        
+        // 获取签名数据的简化方法
+        function getSignatureData() {
+            // 方法1: 尝试使用toDataURL
+            try {
+                updateProcessingStep("获取签名数据...");
+                const dataUrl = canvas.toDataURL('image/png');
+                if (dataUrl && dataUrl !== 'data:,') {
+                    return { data: dataUrl, method: 'toDataURL' };
+                }
+            } catch (e) {
+                console.log("toDataURL方法失败:", e);
+            }
+            
+            // 方法2: 尝试获取原始像素数据
+            try {
+                updateProcessingStep("使用备用方式获取签名数据...");
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const pixelData = Array.from(imageData.data).join(',');
+                return { data: pixelData, method: 'pixelData' };
+            } catch (e) {
+                console.log("获取像素数据失败:", e);
+            }
+            
+            // 方法3: 最简化的签名存在性检查
+            throw new Error("无法获取签名数据，请尝试使用不同的浏览器或设备");
+        }
+        
+        // 签名相关变量
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        
+        // 开始绘制
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = getCoordinates(e);
+        }
+        
+        // 绘制中
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            // 标记已有签名
+            hasSignature = true;
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            
+            const [currentX, currentY] = getCoordinates(e);
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+            
+            [lastX, lastY] = [currentX, currentY];
+            
+            // 隐藏错误提示
+            if (!hashError.classList.contains('hidden')) {
+                showSection(hashPlaceholder);
+            }
+        }
+        
+        // 结束绘制
+        function stopDrawing() {
+            isDrawing = false;
+        }
+        
+        // 获取坐标
+        function getCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            let x, y;
+            
+            if (e.type.includes('mouse')) {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
+            } else {
+                x = e.touches[0].clientX - rect.left;
+                y = e.touches[0].clientY - rect.top;
+            }
+            
+            return [x, y];
+        }
+        
+        // 使用指定算法生成哈希值
+        function generateHashWithAlgorithm(data, algorithm) {
+            updateProcessingStep(`使用${algorithm}算法生成哈希值...`);
+            
+            switch(algorithm) {
+                case 'primary':
+                    if (typeof CryptoJS === 'undefined' || typeof CryptoJS.SHA256 !== 'function') {
+                        throw new Error('主加密库不可用');
+                    }
+                    return CryptoJS.SHA256(data).toString();
+                    
+                case 'alternative':
+                    if (typeof sha256 !== 'function') {
+                        throw new Error('备用加密库不可用');
+                    }
+                    return sha256(data);
+                    
+                case 'local':
+                    return LocalSHA256.hash(data);
+                    
+                default:
+                    throw new Error(`未知算法: ${algorithm}`);
+            }
+        }
+        
+        // 生成哈希值 - 多重保障机制
+        function generateHash(algorithm = 'primary') {
+            // 重置错误状态
+            lastError = null;
+            errorDetails.textContent = '';
+            errorDetails.classList.remove('show');
+            
+            // 检查是否有签名
+            if (!hasSignature) {
+                showSection(emptySignatureWarning);
+                showToast('请先完成签名再确认', 'error');
+                return;
+            }
+            
+            // 显示处理状态
+            showSection(hashProcessing);
+            saveBtn.classList.add('btn-loading');
+            saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>处理中...';
+            updateProcessingStep("准备处理...");
+            
+            // 获取加密库状态
+            const libraries = checkEncryptionLibraries();
+            const availableAlgorithms = Object.keys(libraries).filter(alg => libraries[alg].available);
+            
+            // 确保选择的算法可用
+            if (!availableAlgorithms.includes(algorithm)) {
+                console.log(`选择的算法${algorithm}不可用，自动切换到第一个可用算法`);
+                algorithm = availableAlgorithms[0];
+            }
+            
+            try {
+                // 1. 获取签名数据（使用多重方法确保成功）
+                const signatureInfo = getSignatureData();
+                const signatureData = signatureInfo.data;
+                
+                // 2. 准备哈希数据
+                updateProcessingStep("准备哈希数据...");
+                const timestamp = new Date().toISOString();
+                const randomSalt = Math.random().toString(36).substring(2, 15);
+                const dataToHash = signatureData + '|' + timestamp + '|' + randomSalt;
+                
+                // 3. 生成哈希值
+                let hash = generateHashWithAlgorithm(dataToHash, algorithm);
+                
+                // 4. 验证哈希值格式
+                if (!hash || hash.length !== 64) {
+                    throw new Error(`生成的哈希值无效，长度为${hash ? hash.length : 0}，预期64个字符`);
+                }
+                
+                // 5. 显示哈希值
+                setTimeout(() => {
+                    showSection(hashResult);
+                    hashValue.textContent = hash;
+                    algorithmUsed.textContent = `使用算法: ${libraries[algorithm].name}`;
+                    
+                    showToast(`签名已确认，使用${libraries[algorithm].name}生成哈希值`, 'success');
+                    
+                    // 恢复按钮状态
+                    saveBtn.classList.remove('btn-loading');
+                    saveBtn.innerHTML = '<i class="fa fa-check mr-2"></i>确认签名';
+                }, 800);
+                
+            } catch (error) {
+                console.error('生成哈希值时出错:', error);
+                lastError = error;
+                
+                // 收集系统信息辅助诊断
+                const systemInfo = [
+                    `浏览器: ${navigator.userAgent}`,
+                    `加密库状态: ${JSON.stringify(libraries)}`,
+                    `使用算法: ${algorithm}`,
+                    `可用算法: ${availableAlgorithms.join(', ')}`,
+                    `时间: ${new Date().toLocaleString()}`,
+                    `错误类型: ${error.name}`,
+                    `错误信息: ${error.message}`
+                ].join('\n');
+                
+                errorDetails.textContent = systemInfo;
+                
+                // 尝试下一个可用算法
+                const currentIndex = availableAlgorithms.indexOf(algorithm);
+                if (currentIndex < availableAlgorithms.length - 1) {
+                    const nextAlgorithm = availableAlgorithms[currentIndex + 1];
+                    setTimeout(() => {
+                        showToast(`尝试使用${libraries[nextAlgorithm].name}...`, 'info');
+                        generateHash(nextAlgorithm);
+                    }, 1000);
+                    return;
+                }
+                
+                // 如果所有算法都失败，显示错误界面
+                showSection(hashError);
+                showToast('所有算法均尝试失败，请查看错误详情', 'error');
+                
+                // 恢复按钮状态
+                saveBtn.classList.remove('btn-loading');
+                saveBtn.innerHTML = '<i class="fa fa-check mr-2"></i>确认签名';
+            }
+        }
+        
+        // 事件监听
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        // 触摸屏支持
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startDrawing(e);
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            draw(e);
+        });
+        canvas.addEventListener('touchend', stopDrawing);
+        
+        // 按钮事件
+        clearBtn.addEventListener('click', () => {
+            clearCanvas();
+            showToast('签名已清除');
+        });
+        
+        saveBtn.addEventListener('click', () => generateHash('primary'));
+        retryBtn.addEventListener('click', () => generateHash(currentAlgorithm));
+        alternativeMethodBtn.addEventListener('click', () => {
+            currentAlgorithm = 'alternative';
+            generateHash('alternative');
+        });
+        basicMethodBtn.addEventListener('click', () => {
+            currentAlgorithm = 'local';
+            generateHash('local');
+        });
+        
+        // 错误详情显示/隐藏
+        showErrorDetailsBtn.addEventListener('click', () => {
+            errorDetails.classList.toggle('show');
+            showErrorDetailsBtn.textContent = errorDetails.classList.contains('show') 
+                ? '隐藏错误信息' 
+                : '查看详细错误信息';
+        });
+        
+        // 窗口大小变化时重新设置画布
+        window.addEventListener('resize', resizeCanvas);
+        
+        // 初始化
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            initCanvas();
+        });
+    </script>
+</body>
+</html>

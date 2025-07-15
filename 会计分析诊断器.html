@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会计分录错误诊断</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        debit: '#ef4444',
+                        credit: '#2563eb',
+                        neutral: '#f3f4f6',
+                        primary: '#1e40af',
+                        error: '#dc2626',
+                        correct: '#10b981',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'fade-out': 'fadeOut 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                    },
+                    keyframes: {
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        fadeOut: {
+                            '0%': { opacity: '1' },
+                            '100%': { opacity: '0' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .cross-overlay {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                pointer-events: none;
+            }
+            .cross-line {
+                position: absolute;
+                background-color: #dc2626;
+                height: 4px;
+                width: 120%;
+                border-radius: 2px;
+            }
+            .cross-line:first-child {
+                transform: rotate(45deg);
+            }
+            .cross-line:last-child {
+                transform: rotate(-45deg);
+            }
+            .diagnosis-card {
+                transition: all 0.3s ease;
+            }
+            .diagnosis-card:hover {
+                transform: translateY(-5px);
+            }
+            .card-shadow {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-neutral to-white min-h-screen font-sans text-gray-800">
+    <header class="bg-primary text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-shadow flex items-center">
+                        <i class="fa fa-stethoscope mr-3 text-yellow-300"></i>
+                        会计分录错误诊断
+                    </h1>
+                    <p class="text-blue-100 mt-1">识别并纠正常见会计处理错误</p>
+                </div>
+                <div class="flex space-x-4">
+                    <button id="theme-toggle" class="bg-blue-700 hover:bg-blue-600 text-white p-2 rounded-full transition-all duration-300 hover:scale-110">
+                        <i class="fa fa-moon-o"></i>
+                    </button>
+                    <button id="help-btn" class="bg-blue-700 hover:bg-blue-600 text-white p-2 rounded-full transition-all duration-300 hover:scale-110">
+                        <i class="fa fa-question"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <section class="mb-12">
+            <div class="text-center mb-8">
+                <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800 mb-3">常见会计分录错误诊断</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">通过实际案例学习如何识别和纠正会计处理中的常见错误</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- 错误案例卡片 -->
+                <div class="diagnosis-card bg-white rounded-xl shadow-lg overflow-hidden card-shadow">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-xl font-bold text-gray-800">错误案例 #1</h3>
+                            <span class="bg-error/10 text-error px-3 py-1 rounded-full text-sm font-medium">
+                                错误分录
+                            </span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4 class="font-semibold text-gray-700 mb-2">业务描述</h4>
+                            <p class="text-gray-600">企业收到股东投入现金100,000元，会计将其记录为收入。</p>
+                        </div>
+                        
+                        <div class="mb-6 relative">
+                            <h4 class="font-semibold text-gray-700 mb-2">错误分录</h4>
+                            <div class="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg">
+                                <span id="wrong-debit" class="px-3 py-1 bg-debit/10 text-debit rounded-full text-sm font-medium">
+                                    借：银行存款 100,000
+                                </span>
+                                <span id="wrong-credit" class="px-3 py-1 bg-credit/10 text-credit rounded-full text-sm font-medium">
+                                    贷：主营业务收入 100,000
+                                </span>
+                            </div>
+                            <!-- 红叉覆盖层 -->
+                            <div id="cross-overlay" class="cross-overlay opacity-0">
+                                <div class="cross-line"></div>
+                                <div class="cross-line"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4 hidden" id="diagnosis-explanation">
+                            <h4 class="font-semibold text-error mb-2">
+                                <i class="fa fa-exclamation-circle mr-1"></i> 诊断结果
+                            </h4>
+                            <div class="p-3 bg-error/5 border border-error/20 rounded-lg">
+                                <p class="text-gray-700">
+                                    <span class="font-medium">错误类型：</span>会计要素分类错误<br>
+                                    <span class="font-medium">错误原因：</span>收到股东投资应记入所有者权益（如"实收资本"），而非收入。收入是企业日常经营活动中形成的经济利益流入，而股东投资属于企业资本投入。<br>
+                                    <span class="font-medium">影响：</span>该错误会高估当期收入和利润，同时低估所有者权益。
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4 hidden" id="correct-entry">
+                            <h4 class="font-semibold text-correct mb-2">
+                                <i class="fa fa-check-circle mr-1"></i> 正确分录
+                            </h4>
+                            <div class="flex flex-wrap gap-2 p-3 bg-correct/5 border border-correct/20 rounded-lg">
+                                <span class="px-3 py-1 bg-debit/10 text-debit rounded-full text-sm font-medium">
+                                    借：银行存款 100,000
+                                </span>
+                                <span class="px-3 py-1 bg-credit/10 text-credit rounded-full text-sm font-medium">
+                                    贷：实收资本 100,000
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <button id="diagnose-btn" class="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-all duration-300 flex items-center justify-center">
+                            <i class="fa fa-stethoscope mr-2"></i> 开始诊断
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 知识卡片 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden card-shadow">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-xl font-bold text-gray-800">会计知识</h3>
+                            <span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                                学习要点
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="p-3 bg-blue-50 rounded-lg">
+                                <h4 class="font-semibold text-primary mb-2">
+                                    <i class="fa fa-bookmark-o mr-1"></i> 收入与所有者权益的区别
+                                </h4>
+                                <ul class="text-gray-700 space-y-2">
+                                    <li class="flex items-start">
+                                        <i class="fa fa-circle text-xs text-primary mt-1.5 mr-2"></i>
+                                        <span>收入是企业日常经营活动产生的经济利益流入（如销售商品、提供劳务）</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-circle text-xs text-primary mt-1.5 mr-2"></i>
+                                        <span>所有者权益是企业资产扣除负债后由所有者享有的剩余权益（如股东投资、留存收益）</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-circle text-xs text-primary mt-1.5 mr-2"></i>
+                                        <span>收入会影响利润表，而所有者权益直接反映在资产负债表中</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <div class="p-3 bg-green-50 rounded-lg">
+                                <h4 class="font-semibold text-green-700 mb-2">
+                                    <i class="fa fa-lightbulb-o mr-1"></i> 诊断技巧
+                                </h4>
+                                <ul class="text-gray-700 space-y-2">
+                                    <li class="flex items-start">
+                                        <i class="fa fa-check-circle text-xs text-green-700 mt-1.5 mr-2"></i>
+                                        <span>分析业务性质：判断是经营活动还是资本活动</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-check-circle text-xs text-green-700 mt-1.5 mr-2"></i>
+                                        <span>确认会计要素：资产、负债、所有者权益、收入、费用</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-check-circle text-xs text-green-700 mt-1.5 mr-2"></i>
+                                        <span>检查借贷规则：资产/费用增加记借方，负债/权益/收入增加记贷方</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <div class="p-3 bg-purple-50 rounded-lg">
+                                <h4 class="font-semibold text-purple-700 mb-2">
+                                    <i class="fa fa-warning mr-1"></i> 常见错误类型
+                                </h4>
+                                <ul class="text-gray-700 space-y-2">
+                                    <li class="flex items-start">
+                                        <i class="fa fa-times-circle text-xs text-purple-700 mt-1.5 mr-2"></i>
+                                        <span>会计要素分类错误（如本案例）</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-times-circle text-xs text-purple-700 mt-1.5 mr-2"></i>
+                                        <span>借贷方向错误</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-times-circle text-xs text-purple-700 mt-1.5 mr-2"></i>
+                                        <span>金额计算错误</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-times-circle text-xs text-purple-700 mt-1.5 mr-2"></i>
+                                        <span>遗漏交易或重复记账</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <div class="text-center mb-8">
+                <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800 mb-3">更多错误案例</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">学习识别会计处理中的其他常见错误</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 案例2 -->
+                <div class="diagnosis-card bg-white rounded-xl shadow-lg overflow-hidden card-shadow">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">错误案例 #2</h3>
+                            <span class="bg-error/10 text-error px-2 py-1 rounded-full text-xs font-medium">
+                                费用资本化错误
+                            </span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4 class="font-semibold text-gray-700 text-sm mb-2">业务描述</h4>
+                            <p class="text-gray-600 text-sm">企业支付当月办公费用5,000元，错误地记入"固定资产"科目。</p>
+                        </div>
+                        
+                        <div class="mb-4 relative">
+                            <h4 class="font-semibold text-gray-700 text-sm mb-2">错误分录</h4>
+                            <div class="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-lg">
+                                <span class="px-2 py-1 bg-debit/10 text-debit rounded-full text-xs font-medium">
+                                    借：固定资产 5,000
+                                </span>
+                                <span class="px-2 py-1 bg-credit/10 text-credit rounded-full text-xs font-medium">
+                                    贷：银行存款 5,000
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition-all duration-300">
+                            查看诊断
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 案例3 -->
+                <div class="diagnosis-card bg-white rounded-xl shadow-lg overflow-hidden card-shadow">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">错误案例 #3</h3>
+                            <span class="bg-error/10 text-error px-2 py-1 rounded-full text-xs font-medium">
+                                折旧计算错误
+                            </span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4 class="font-semibold text-gray-700 text-sm mb-2">业务描述</h4>
+                            <p class="text-gray-600 text-sm">企业未对当月新增固定资产计提折旧，违反了权责发生制原则。</p>
+                        </div>
+                        
+                        <div class="mb-4 relative">
+                            <h4 class="font-semibold text-gray-700 text-sm mb-2">错误处理</h4>
+                            <div class="p-2 bg-gray-50 rounded-lg">
+                                <p class="text-gray-600 text-sm italic">未记录任何折旧分录</p>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition-all duration-300">
+                            查看诊断
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 案例4 -->
+                <div class="diagnosis-card bg-white rounded-xl shadow-lg overflow-hidden card-shadow">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">错误案例 #4</h3>
+                            <span class="bg-error/10 text-error px-2 py-1 rounded-full text-xs font-medium">
+                                负债分类错误
+                            </span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4 class="font-semibold text-gray-700 text-sm mb-2">业务描述</h4>
+                            <p class="text-gray-600 text-sm">企业将长期借款中一年内到期的部分仍列为长期负债。</p>
+                        </div>
+                        
+                        <div class="mb-4 relative">
+                            <h4 class="font-semibold text-gray-700 text-sm mb-2">错误分录</h4>
+                            <div class="p-2 bg-gray-50 rounded-lg">
+                                <p class="text-gray-600 text-sm italic">全部长期借款记入"长期借款"科目，未重分类一年内到期部分</p>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition-all duration-300">
+                            查看诊断
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12 bg-primary/5 rounded-xl p-6 md:p-8">
+            <div class="text-center mb-8">
+                <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800 mb-3">自我测试</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">测试你对会计分录错误诊断的掌握程度</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">诊断练习</h3>
+                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div class="mb-4">
+                            <h4 class="font-semibold text-gray-700 mb-2">业务描述</h4>
+                            <p class="text-gray-600">企业以银行存款支付上月所欠货款20,000元，会计记录如下：</p>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h4 class="font-semibold text-gray-700 mb-2">会计分录</h4>
+                            <div class="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg">
+                                <span class="px-3 py-1 bg-debit/10 text-debit rounded-full text-sm font-medium">
+                                    借：应收账款 20,000
+                                </span>
+                                <span class="px-3 py-1 bg-credit/10 text-credit rounded-full text-sm font-medium">
+                                    贷：银行存款 20,000
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h4 class="font-semibold text-gray-700 mb-3">请选择正确的诊断</h4>
+                            <div class="space-y-3">
+                                <div class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="radio" id="option1" name="diagnosis" class="mr-3">
+                                    <label for="option1" class="text-gray-700 cursor-pointer">
+                                        借贷方向错误，应收账款应记入贷方
+                                    </label>
+                                </div>
+                                <div class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="radio" id="option2" name="diagnosis" class="mr-3">
+                                    <label for="option2" class="text-gray-700 cursor-pointer">
+                                        会计科目错误，应记入"应付账款"借方
+                                    </label>
+                                </div>
+                                <div class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="radio" id="option3" name="diagnosis" class="mr-3">
+                                    <label for="option3" class="text-gray-700 cursor-pointer">
+                                        金额错误，应为10,000元
+                                    </label>
+                                </div>
+                                <div class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="radio" id="option4" name="diagnosis" class="mr-3">
+                                    <label for="option4" class="text-gray-700 cursor-pointer">
+                                        分录正确，无需调整
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 hover:shadow-lg">
+                            提交答案
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-10">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">会计分录错误诊断</h3>
+                    <p class="text-gray-400">帮助会计学习者识别和纠正常见会计分录错误，提升账务处理准确性。</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">学习资源</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors duration-300">会计基础教程</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors duration-300">常见会计错误解析</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors duration-300">会计分录指南</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors duration-300">财务报表编制</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">联系我们</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li class="flex items-center">
+                            <i class="fa fa-envelope-o mr-2"></i>
+                            <a href="mailto:support@accountinglearning.com" class="hover:text-white transition-colors duration-300">support@accountinglearning.com</a>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fa fa-phone mr-2"></i>
+                            <a href="tel:+8612345678900" class="hover:text-white transition-colors duration-300">+86 123 4567 8900</a>
+                        </li>
+                    </ul>
+                    <div class="mt-4 flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fa fa-weixin text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fa fa-weibo text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fa fa-qq text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-500 text-sm">
+                <p>&copy; 2025 会计分录错误诊断 | 保留所有权利</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 获取DOM元素
+        const diagnoseBtn = document.getElementById('diagnose-btn');
+        const crossOverlay = document.getElementById('cross-overlay');
+        const wrongDebit = document.getElementById('wrong-debit');
+        const wrongCredit = document.getElementById('wrong-credit');
+        const diagnosisExplanation = document.getElementById('diagnosis-explanation');
+        const correctEntry = document.getElementById('correct-entry');
+        const themeToggle = document.getElementById('theme-toggle');
+        const helpBtn = document.getElementById('help-btn');
+
+        // 诊断按钮点击事件
+        diagnoseBtn.addEventListener('click', () => {
+            // 添加红叉覆盖层动画
+            crossOverlay.classList.remove('opacity-0');
+            crossOverlay.classList.add('animate-fade-in');
+            
+            // 添加错误分录抖动动画
+            wrongDebit.classList.add('animate-shake');
+            wrongCredit.classList.add('animate-shake');
+            
+            // 延迟显示诊断结果和正确分录
+            setTimeout(() => {
+                diagnosisExplanation.classList.remove('hidden');
+                diagnosisExplanation.classList.add('animate-slide-up');
+                
+                setTimeout(() => {
+                    correctEntry.classList.remove('hidden');
+                    correctEntry.classList.add('animate-slide-up');
+                    
+                    // 更新按钮文本
+                    diagnoseBtn.innerHTML = '<i class="fa fa-check mr-2"></i> 诊断完成';
+                    diagnoseBtn.classList.remove('bg-primary');
+                    diagnoseBtn.classList.add('bg-correct');
+                    diagnoseBtn.disabled = true;
+                }, 500);
+            }, 1000);
+        });
+
+        // 主题切换
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('bg-gray-900');
+            document.body.classList.toggle('text-white');
+            
+            const isDark = document.body.classList.contains('bg-gray-900');
+            themeToggle.innerHTML = isDark ? '<i class="fa fa-sun-o"></i>' : '<i class="fa fa-moon-o"></i>';
+            
+            // 更新卡片颜色
+            const cards = document.querySelectorAll('.diagnosis-card, .bg-white.rounded-xl.shadow-lg');
+            cards.forEach(card => {
+                if (isDark) {
+                    card.classList.remove('bg-white');
+                    card.classList.add('bg-gray-800');
+                } else {
+                    card.classList.remove('bg-gray-800');
+                    card.classList.add('bg-white');
+                }
+            });
+            
+            // 更新案例背景
+            const cases = document.querySelectorAll('.bg-gray-50.rounded-lg.border');
+            cases.forEach(caseEl => {
+                if (isDark) {
+                    caseEl.classList.remove('bg-gray-50');
+                    caseEl.classList.add('bg-gray-700');
+                    caseEl.classList.remove('border-gray-200');
+                    caseEl.classList.add('border-gray-600');
+                } else {
+                    caseEl.classList.remove('bg-gray-700');
+                    caseEl.classList.add('bg-gray-50');
+                    caseEl.classList.remove('border-gray-600');
+                    caseEl.classList.add('border-gray-200');
+                }
+            });
+            
+            // 更新学习资源背景
+            const resources = document.querySelectorAll('.bg-blue-50.rounded-lg, .bg-green-50.rounded-lg, .bg-purple-50.rounded-lg');
+            resources.forEach(res => {
+                if (isDark) {
+                    res.classList.add('bg-gray-700');
+                    res.classList.remove('bg-blue-50', 'bg-green-50', 'bg-purple-50');
+                } else {
+                    res.classList.remove('bg-gray-700');
+                    res.classList.add('bg-blue-50', 'bg-green-50', 'bg-purple-50');
+                }
+            });
+            
+            // 更新自测部分背景
+            const testSection = document.querySelector('.bg-primary\\/5.rounded-xl');
+            if (testSection) {
+                if (isDark) {
+                    testSection.classList.remove('bg-primary/5');
+                    testSection.classList.add('bg-gray-800');
+                } else {
+                    testSection.classList.remove('bg-gray-800');
+                    testSection.classList.add('bg-primary/5');
+                }
+            }
+        });
+
+        // 帮助按钮
+        helpBtn.addEventListener('click', () => {
+            alert('这是一个帮助会计学习者识别和纠正常见会计分录错误的小程序。\n\n使用方法：\n1. 点击"开始诊断"按钮分析错误案例\n2. 查看错误标识和详细诊断说明\n3. 学习正确的会计处理方法\n4. 尝试自我测试，检验学习效果');
+        });
+    </script>
+</body>
+</html>
+    

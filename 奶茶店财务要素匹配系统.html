@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>奶茶店财务要素拖拽匹配系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF6B81',    // 奶茶粉色 - 主色调
+                        success: '#2ED573',    // 绿色 - 成功状态
+                        danger: '#FF4757',     // 红色 - 错误状态
+                        neutral: '#F8F9FA',    // 中性色 - 背景
+                        'neutral-dark': '#2F3542', // 中性深色 - 文本
+                        'owner-equity': '#8D5CF6'  // 所有者权益 - 深紫色
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            }
+            .drop-zone-active {
+                @apply border-success bg-success/10;
+            }
+            .card-dragging {
+                @apply opacity-50 scale-95;
+            }
+        }
+    </style>
+</head>
+<body class="bg-neutral min-h-screen font-inter text-neutral-dark">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- 头部标题 -->
+        <header class="mb-10 text-center">
+            <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-primary mb-2">
+                <i class="fa fa-coffee mr-3"></i>奶茶店财务要素拖拽匹配系统
+            </h1>
+            <p class="text-gray-600 max-w-2xl mx-auto">
+                将左侧的奶茶店业务卡片拖拽到右侧对应的财务要素区域，系统会验证匹配是否正确
+            </p>
+        </header>
+        
+        <!-- 主内容区 -->
+        <main class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+            <div class="flex flex-col md:flex-row gap-8">
+                <!-- 左侧：业务卡池 -->
+                <div class="w-full md:w-1/2">
+                    <div class="mb-4">
+                        <h2 class="text-xl font-semibold mb-3 flex items-center">
+                            <i class="fa fa-th-large text-primary mr-2"></i>奶茶店业务卡池
+                        </h2>
+                        <p class="text-sm text-gray-500 mb-4">可拖拽的奶茶店业务操作卡片</p>
+                        
+                        <div id="card-pool" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- 卡片将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 右侧：要素磁贴区 -->
+                <div class="w-full md:w-1/2">
+                    <div class="mb-4">
+                        <h2 class="text-xl font-semibold mb-3 flex items-center">
+                            <i class="fa fa-puzzle-piece text-primary mr-2"></i>财务要素磁贴区
+                        </h2>
+                        <p class="text-sm text-gray-500 mb-4">将左侧卡片拖拽到此区域进行匹配验证</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- 资产接收区 -->
+                            <div class="drop-zone border-2 border-dashed border-blue-300 rounded-lg p-4 min-h-[180px] transition-all duration-300 hover:border-blue-500"
+                                 data-accept="asset">
+                                <div class="text-center mb-3">
+                                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-2">
+                                        <i class="fa fa-briefcase text-blue-600 text-xl"></i>
+                                    </div>
+                                    <h3 class="font-medium text-blue-700">资产</h3>
+                                </div>
+                                <div class="results-container mt-2 space-y-2">
+                                    <!-- 匹配结果将显示在这里 -->
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mt-3">
+                                    <div class="text-xs text-center p-1 bg-blue-50 rounded">
+                                        <i class="fa fa-plus-circle text-blue-500"></i> 增加
+                                    </div>
+                                    <div class="text-xs text-center p-1 bg-blue-50 rounded">
+                                        <i class="fa fa-minus-circle text-blue-500"></i> 减少
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 负债接收区 -->
+                            <div class="drop-zone border-2 border-dashed border-purple-300 rounded-lg p-4 min-h-[180px] transition-all duration-300 hover:border-purple-500"
+                                 data-accept="liability">
+                                <div class="text-center mb-3">
+                                    <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-2">
+                                        <i class="fa fa-credit-card text-purple-600 text-xl"></i>
+                                    </div>
+                                    <h3 class="font-medium text-purple-700">负债</h3>
+                                </div>
+                                <div class="results-container mt-2 space-y-2">
+                                    <!-- 匹配结果将显示在这里 -->
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mt-3">
+                                    <div class="text-xs text-center p-1 bg-purple-50 rounded">
+                                        <i class="fa fa-plus-circle text-purple-500"></i> 增加
+                                    </div>
+                                    <div class="text-xs text-center p-1 bg-purple-50 rounded">
+                                        <i class="fa fa-minus-circle text-purple-500"></i> 减少
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 所有者权益接收区 -->
+                            <div class="drop-zone border-2 border-dashed border-owner-equity-300 rounded-lg p-4 min-h-[180px] transition-all duration-300 hover:border-owner-equity-500"
+                                 data-accept="owner-equity">
+                                <div class="text-center mb-3">
+                                    <div class="w-12 h-12 rounded-full bg-owner-equity-100 flex items-center justify-center mx-auto mb-2">
+                                        <i class="fa fa-user text-owner-equity-600 text-xl"></i>
+                                    </div>
+                                    <h3 class="font-medium text-owner-equity-700">所有者权益</h3>
+                                </div>
+                                <div class="results-container mt-2 space-y-2">
+                                    <!-- 匹配结果将显示在这里 -->
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mt-3">
+                                    <div class="text-xs text-center p-1 bg-owner-equity-50 rounded">
+                                        <i class="fa fa-plus-circle text-owner-equity-500"></i> 增加
+                                    </div>
+                                    <div class="text-xs text-center p-1 bg-owner-equity-50 rounded">
+                                        <i class="fa fa-minus-circle text-owner-equity-500"></i> 减少
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 收入接收区 -->
+                            <div class="drop-zone border-2 border-dashed border-green-300 rounded-lg p-4 min-h-[180px] transition-all duration-300 hover:border-green-500"
+                                 data-accept="revenue">
+                                <div class="text-center mb-3">
+                                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2">
+                                        <i class="fa fa-arrow-up text-green-600 text-xl"></i>
+                                    </div>
+                                    <h3 class="font-medium text-green-700">收入</h3>
+                                </div>
+                                <div class="results-container mt-2 space-y-2">
+                                    <!-- 匹配结果将显示在这里 -->
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mt-3">
+                                    <div class="text-xs text-center p-1 bg-green-50 rounded">
+                                        <i class="fa fa-plus-circle text-green-500"></i> 增加
+                                    </div>
+                                    <div class="text-xs text-center p-1 bg-green-50 rounded">
+                                        <i class="fa fa-minus-circle text-green-500"></i> 减少
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 费用接收区 -->
+                            <div class="drop-zone border-2 border-dashed border-amber-300 rounded-lg p-4 min-h-[180px] transition-all duration-300 hover:border-amber-500"
+                                 data-accept="expense">
+                                <div class="text-center mb-3">
+                                    <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-2">
+                                        <i class="fa fa-arrow-down text-amber-600 text-xl"></i>
+                                    </div>
+                                    <h3 class="font-medium text-amber-700">费用</h3>
+                                </div>
+                                <div class="results-container mt-2 space-y-2">
+                                    <!-- 匹配结果将显示在这里 -->
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mt-3">
+                                    <div class="text-xs text-center p-1 bg-amber-50 rounded">
+                                        <i class="fa fa-plus-circle text-amber-500"></i> 增加
+                                    </div>
+                                    <div class="text-xs text-center p-1 bg-amber-50 rounded">
+                                        <i class="fa fa-minus-circle text-amber-500"></i> 减少
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 统计信息 -->
+            <div class="mt-8 p-4 bg-primary/10 rounded-lg">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="font-medium text-sm text-gray-600">匹配统计</h3>
+                        <div class="flex items-center mt-1">
+                            <span class="text-lg font-semibold text-primary" id="correct-count">0</span>
+                            <span class="text-gray-500 text-sm ml-1">正确</span>
+                            <span class="mx-2 text-gray-300">|</span>
+                            <span class="text-lg font-semibold text-danger" id="wrong-count">0</span>
+                            <span class="text-gray-500 text-sm ml-1">错误</span>
+                        </div>
+                    </div>
+                    <button id="reset-btn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+                        <i class="fa fa-refresh mr-1"></i>重置
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 反馈弹窗 -->
+            <div id="feedback-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+                <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl transform transition-transform duration-300 scale-95" id="modal-content">
+                    <div class="text-center">
+                        <div id="feedback-icon" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fa fa-check text-2xl"></i>
+                        </div>
+                        <h3 id="feedback-title" class="text-xl font-bold mb-2">太棒了！</h3>
+                        <p id="feedback-message" class="text-gray-600 mb-6">你的回答完全正确，继续保持！</p>
+                        <button id="close-modal" class="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors duration-200">
+                            继续挑战
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- 页脚 -->
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>© 2025 奶茶店财务要素拖拽匹配系统 | 一个演示财务管理概念的交互式教学工具</p>
+        </footer>
+    </div>
+    
+    <!-- 拖拽匹配逻辑 -->
+    <script>
+        // 统计数据
+        let stats = {
+            correct: 0,
+            wrong: 0
+        };
+        
+        // 奖励性和鼓励性话语
+        const successMessages = [
+            "太棒了！", "完美匹配！", "做得好！", "真不错！", "继续保持！", "优秀！", "非常正确！", "好样的！", "答对了！", "你掌握了！"
+        ];
+        
+        const errorMessages = [
+            "再试一次！", "继续加油！", "不要灰心！", "接近正确了！", "下次会更好！", "再思考一下！", "再接再厉！", "错误是成功之母！", "继续努力！", "加油！"
+        ];
+        
+        // 业务卡片数据 - 确保股东追加投资为所有者权益增加
+        const cardData = {
+            "asset": [
+                { name: "购入奶茶原料", icon: "fa-shopping-basket", type: "increase" },
+                { name: "报废过期原料", icon: "fa-trash", type: "decrease" }
+            ],
+            "liability": [
+                { name: "银行贷款", icon: "fa-university", type: "increase" },
+                { name: "偿还贷款", icon: "fa-credit-card", type: "decrease" }
+            ],
+            "owner-equity": [
+                { name: "股东追加投资", icon: "fa-user-plus", type: "increase" },
+                { name: "分配利润", icon: "fa-share-alt", type: "decrease" }
+            ],
+            "revenue": [
+                { name: "现售珍珠奶茶", icon: "fa-money", type: "increase" },
+                { name: "客户退款", icon: "fa-refresh", type: "decrease" }
+            ],
+            "expense": [
+                { name: "支付员工工资", icon: "fa-users", type: "increase" },
+                { name: "供应商返利", icon: "fa-percent", type: "decrease" }
+            ]
+        };
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', () => {
+            // 随机生成卡片
+            generateRandomCards();
+            
+            // 初始化卡片拖拽事件
+            initCardEvents();
+            
+            // 初始化放置区域事件
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.addEventListener('dragover', handleDragOver);
+                zone.addEventListener('dragleave', handleDragLeave);
+                zone.addEventListener('drop', handleDrop);
+            });
+            
+            // 重置按钮事件
+            document.getElementById('reset-btn').addEventListener('click', resetResults);
+            
+            // 关闭弹窗事件
+            document.getElementById('close-modal').addEventListener('click', () => {
+                document.getElementById('feedback-modal').classList.remove('opacity-100');
+                document.getElementById('feedback-modal').classList.add('opacity-0', 'pointer-events-none');
+                document.getElementById('modal-content').classList.remove('scale-100');
+                document.getElementById('modal-content').classList.add('scale-95');
+            });
+        });
+        
+        // 随机生成卡片
+        function generateRandomCards() {
+            const cardPool = document.getElementById('card-pool');
+            cardPool.innerHTML = '';
+            
+            // 按资产、负债、所有者权益、收入、费用的顺序添加卡片
+            const elementOrder = ['asset', 'liability', 'owner-equity', 'revenue', 'expense'];
+            
+            elementOrder.forEach(element => {
+                // 获取该要素的卡片
+                const cards = [...cardData[element]];
+                
+                // 随机打乱增加和减少的顺序
+                if (Math.random() > 0.5) {
+                    cards.reverse();
+                }
+                
+                // 添加到卡片池
+                cards.forEach(card => {
+                    const cardType = `${element}-${card.type}`;
+                    const cardElement = createCardElement(element, cardType, card.name, card.icon);
+                    cardPool.appendChild(cardElement);
+                });
+            });
+        }
+        
+        // 创建卡片元素
+        function createCardElement(element, type, name, icon) {
+            const card = document.createElement('div');
+            let borderColor, bgColor, textColor;
+            
+            // 根据要素设置颜色
+            if (element === 'asset') {
+                borderColor = 'border-blue-500';
+                bgColor = 'bg-blue-100';
+                textColor = 'text-blue-600';
+            } else if (element === 'liability') {
+                borderColor = 'border-purple-500';
+                bgColor = 'bg-purple-100';
+                textColor = 'text-purple-600';
+            } else if (element === 'owner-equity') {
+                borderColor = 'border-owner-equity-500';
+                bgColor = 'bg-owner-equity-100';
+                textColor = 'text-owner-equity-600';
+            } else if (element === 'revenue') {
+                borderColor = 'border-green-500';
+                bgColor = 'bg-green-100';
+                textColor = 'text-green-600';
+            } else if (element === 'expense') {
+                borderColor = 'border-amber-500';
+                bgColor = 'bg-amber-100';
+                textColor = 'text-amber-600';
+            }
+            
+            card.className = `card bg-white ${borderColor} rounded-lg p-5 cursor-move transition-all duration-300 card-shadow hover:shadow-md`;
+            card.draggable = true;
+            card.dataset.type = type;
+            
+            card.innerHTML = `
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full ${bgColor} flex items-center justify-center mr-3">
+                        <i class="fa ${icon} ${textColor}"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium">${name}</h3>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // 初始化卡片事件
+        function initCardEvents() {
+            document.querySelectorAll('.card').forEach(card => {
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+            });
+        }
+        
+        // 拖拽开始
+        function handleDragStart(e) {
+            this.classList.add('card-dragging');
+            e.dataTransfer.setData('text/plain', this.dataset.type);
+            
+            // 设置拖拽图像
+            const crt = this.cloneNode(true);
+            crt.style.position = 'absolute';
+            crt.style.top = '-1000px';
+            document.body.appendChild(crt);
+            e.dataTransfer.setDragImage(crt, 20, 20);
+            
+            setTimeout(() => {
+                this.style.opacity = '0.4';
+            }, 0);
+        }
+        
+        // 拖拽结束
+        function handleDragEnd() {
+            this.classList.remove('card-dragging');
+            this.style.opacity = '1';
+            
+            // 移除所有区域的激活状态
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.classList.remove('drop-zone-active');
+            });
+        }
+        
+        // 拖拽经过目标区域
+        function handleDragOver(e) {
+            e.preventDefault();
+            this.classList.add('drop-zone-active');
+        }
+        
+        // 离开目标区域
+        function handleDragLeave() {
+            this.classList.remove('drop-zone-active');
+        }
+        
+        // 放置处理 - 确保所有者权益的业务卡片正确归类
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drop-zone-active');
+            
+            const data = e.dataTransfer.getData('text/plain');
+            const resultsContainer = this.querySelector('.results-container');
+            const zoneType = this.dataset.accept;
+            
+            // 获取卡片名称
+            const cardElement = document.querySelector(`[data-type="${data}"]`);
+            const cardName = cardElement ? cardElement.querySelector('h3').textContent : '';
+            
+            // 获取区域名称
+            const zoneName = this.querySelector('h3').textContent;
+            
+            // 获取卡片类型（增加/减少）
+            const cardElementType = data.split('-')[0];
+            const cardChangeType = data.split('-')[1];
+            
+            // 验证匹配 - 确保所有者权益的业务卡片正确归类
+            let isCorrect = false;
+            
+            // 特殊处理所有者权益的匹配
+            if (zoneType === 'owner-equity') {
+                // 正确的所有者权益业务操作
+                const validOwnerEquityOperations = ['股东追加投资', '分配利润'];
+                isCorrect = validOwnerEquityOperations.includes(cardName);
+            } else {
+                // 其他要素使用类型匹配
+                isCorrect = cardElementType === zoneType;
+            }
+            
+            if (isCorrect) {
+                // 匹配成功
+                stats.correct++;
+                showFeedback(true, cardName, zoneName, cardChangeType);
+                addResult(resultsContainer, 'success', cardName, zoneName, cardChangeType);
+            } else {
+                // 匹配失败
+                stats.wrong++;
+                showFeedback(false, cardName, zoneName, cardChangeType);
+                addResult(resultsContainer, 'error', cardName, zoneName, cardChangeType);
+            }
+            
+            // 更新统计
+            updateStats();
+        }
+        
+        // 显示反馈弹窗 - 明确股东追加投资的增减类型
+        function showFeedback(isSuccess, cardName, zoneName, changeType) {
+            const modal = document.getElementById('feedback-modal');
+            const modalContent = document.getElementById('modal-content');
+            const icon = document.getElementById('feedback-icon');
+            const title = document.getElementById('feedback-title');
+            const message = document.getElementById('feedback-message');
+            
+            // 设置反馈内容
+            if (isSuccess) {
+                icon.className = 'w-16 h-16 rounded-full bg-success/20 text-success flex items-center justify-center mx-auto mb-4';
+                icon.innerHTML = '<i class="fa fa-check text-2xl"></i>';
+                title.textContent = successMessages[Math.floor(Math.random() * successMessages.length)];
+                
+                // 特别处理股东追加投资的反馈信息
+                if (cardName === '股东追加投资') {
+                    message.textContent = `「${cardName}」属于「${zoneName}」分类的增加项，你的回答完全正确！`;
+                } else if (cardName === '分配利润') {
+                    message.textContent = `「${cardName}」属于「${zoneName}」分类的减少项，你的回答完全正确！`;
+                } else {
+                    message.textContent = `「${cardName}」属于「${zoneName}」分类的${changeType === 'increase' ? '增加' : '减少'}项，你的回答完全正确！`;
+                }
+            } else {
+                icon.className = 'w-16 h-16 rounded-full bg-danger/20 text-danger flex items-center justify-center mx-auto mb-4';
+                icon.innerHTML = '<i class="fa fa-times text-2xl"></i>';
+                title.textContent = errorMessages[Math.floor(Math.random() * errorMessages.length)];
+                message.textContent = `「${cardName}」不属于「${zoneName}」分类，请再思考一下！`;
+            }
+            
+            // 显示弹窗
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+        
+        // 添加匹配结果 - 明确股东追加投资的增减类型
+        function addResult(container, type, cardName, zoneName, changeType) {
+            const result = document.createElement('div');
+            result.className = `p-3 rounded-lg ${type === 'success' ? 'bg-success/10 border-l-4 border-success' : 'bg-danger/10 border-l-4 border-danger'} flex items-center`;
+            
+            if (type === 'success') {
+                // 特别处理股东追加投资的显示信息
+                let changeText = '';
+                if (cardName === '股东追加投资') {
+                    changeText = '增加';
+                } else if (cardName === '分配利润') {
+                    changeText = '减少';
+                } else {
+                    changeText = changeType === 'increase' ? '增加' : '减少';
+                }
+                
+                result.innerHTML = `
+                    <div class="text-success mr-3">
+                        <i class="fa fa-check-circle text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="font-medium">${cardName}</div>
+                        <div class="text-sm text-gray-600">已正确归类到 ${zoneName} (${changeText})</div>
+                    </div>
+                `;
+            } else {
+                result.innerHTML = `
+                    <div class="text-danger mr-3">
+                        <i class="fa fa-times-circle text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="font-medium">${cardName}</div>
+                        <div class="text-sm text-gray-600">归类到 ${zoneName} 错误</div>
+                    </div>
+                `;
+            }
+            
+            // 添加动画效果
+            result.style.opacity = '0';
+            result.style.transform = 'translateY(10px)';
+            container.appendChild(result);
+            
+            // 触发重排后应用动画
+            setTimeout(() => {
+                result.style.opacity = '1';
+                result.style.transform = 'translateY(0)';
+                result.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            }, 10);
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            document.getElementById('correct-count').textContent = stats.correct;
+            document.getElementById('wrong-count').textContent = stats.wrong;
+        }
+        
+        // 重置结果
+        function resetResults() {
+            // 清空所有结果容器
+            document.querySelectorAll('.results-container').forEach(container => {
+                container.innerHTML = '';
+            });
+            
+            // 重置统计
+            stats = {
+                correct: 0,
+                wrong: 0
+            };
+            updateStats();
+            
+            // 重新生成随机卡片
+            generateRandomCards();
+            initCardEvents();
+            
+            // 添加重置动画反馈
+            const main = document.querySelector('main');
+            main.classList.add('animate-pulse');
+            setTimeout(() => {
+                main.classList.remove('animate-pulse');
+            }, 500);
+        }
+    </script>
+</body>
+</html>
